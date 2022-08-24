@@ -5,6 +5,7 @@ const json = require('koa-json')
 const onerror = require('koa-onerror')
 const bodyparser = require('koa-bodyparser')
 const logger = require('koa-logger')
+const log4js = require('./utils/log4j')
 
 const index = require('./routes/index')
 const users = require('./routes/users')
@@ -26,10 +27,12 @@ app.use(views(__dirname + '/views', {
 
 // logger
 app.use(async (ctx, next) => {
-  const start = new Date()
   await next()
-  const ms = new Date() - start
-  console.log(`${ctx.method} ${ctx.url} - ${ms}ms`)
+  log4js.info('log output')  // 测试 info 输出
+})
+app.use(() => {
+  // 这里没传 ctx，所以会报错，用于测试 error 输出
+  ctx.body = 'hello'
 })
 
 // routes
@@ -38,7 +41,7 @@ app.use(users.routes(), users.allowedMethods())
 
 // error-handling
 app.on('error', (err, ctx) => {
-  console.error('server error', err, ctx)
+  log4js.error(err.stack)  // 测试 error 输出
 });
 
 module.exports = app
