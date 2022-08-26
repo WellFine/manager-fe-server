@@ -36,7 +36,7 @@ log4js.configure({
  */
 exports.debug = content => {
   const logger = log4js.getLogger()
-  logger.level = levels.debug
+  // logger.level = levels.debug  // 课程中设置了 level，但是 log4js.configure() 的 categories 中已经设置过了，所以可以忽略
   logger.debug(content)
 }
 
@@ -46,7 +46,7 @@ exports.debug = content => {
  */
 exports.info = content => {
   const logger = log4js.getLogger('info')
-  logger.level = levels.info
+  // logger.level = levels.info
   logger.info(content)
 }
 
@@ -56,6 +56,6 @@ exports.info = content => {
  */
 exports.error = content => {
   const logger = log4js.getLogger('error')
-  logger.level = levels.error
+  // logger.level = levels.error
   logger.error(content)
 }
