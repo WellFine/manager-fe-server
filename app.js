@@ -7,8 +7,10 @@ const bodyparser = require('koa-bodyparser')
 const logger = require('koa-logger')
 const log4js = require('./utils/log4j')
 
-const index = require('./routes/index')
+const router = require('koa-router')()
 const users = require('./routes/users')
+
+require('./config/db')  // 引入数据库
 
 // error handler
 onerror(app)
@@ -27,17 +29,15 @@ app.use(views(__dirname + '/views', {
 
 // logger
 app.use(async (ctx, next) => {
+  log4js.info(`get params: ${JSON.stringify(ctx.request.query)}`)
+  log4js.info(`post params: ${JSON.stringify(ctx.request.body)}`)
   await next()
-  log4js.info('log output')  // 测试 info 输出
-})
-app.use(() => {
-  // 这里没传 ctx，所以会报错，用于测试 error 输出
-  ctx.body = 'hello'
 })
 
 // routes
-app.use(index.routes(), index.allowedMethods())
-app.use(users.routes(), users.allowedMethods())
+router.prefix('/api')  // 一级路由
+router.use(users.routes(), users.allowedMethods())  // 二级路由
+app.use(router.routes(), router.allowedMethods())
 
 // error-handling
 app.on('error', (err, ctx) => {
