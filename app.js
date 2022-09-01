@@ -10,6 +10,8 @@ const log4js = require('./utils/log4j')
 const router = require('koa-router')()
 const users = require('./routes/users')
 
+const jwt = require('jsonwebtoken')
+
 require('./config/db')  // 引入数据库
 
 // error handler
@@ -38,6 +40,13 @@ app.use(async (ctx, next) => {
 router.prefix('/api')  // 一级路由
 router.use(users.routes(), users.allowedMethods())  // 二级路由
 app.use(router.routes(), router.allowedMethods())
+
+// 测试 token 有效性
+router.get('/leave/count', ctx => {
+  const token = ctx.request.headers.authorization.split(' ')[1]
+  const payload = jwt.verify(token, 'imooc')
+  ctx.body = payload
+})
 
 // error-handling
 app.on('error', (err, ctx) => {
