@@ -18,7 +18,7 @@ module.exports = {
    */
   pager ({ pageNum = 1, pageSize = 10 }) {
     pageNum *= 1  // 确保为数字类型
-    pageSize *= 10
+    pageSize *= 1
     const skipIndex = (pageNum - 1) * pageSize
     return {
       page: {

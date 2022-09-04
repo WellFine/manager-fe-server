@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken')
 
 router.prefix('/users')
 
+// 用户登录
 router.post('/login', async ctx => {
   try {
     const { userName, userPwd } = ctx.request.body
@@ -35,6 +36,37 @@ router.post('/login', async ctx => {
     }
   } catch (error) {
     ctx.body = util.fail(error.msg)
+  }
+})
+
+// 用户列表
+router.get('/list', async ctx => {
+  const { userId, userName, state } = ctx.request.query
+  const { page, skipIndex } = util.pager(ctx.request.query)
+  const params = {}
+
+  if (userId) params.userId = userId
+  if (userName) params.userName = userName
+  if (state && state != '0') params.state = state
+
+  try {
+    // 根据条件查询所有用户列表，返回数据中删除 _id 和 userPwd 字段
+    const query = User.find(params, { _id: 0, userPwd: 0 })
+    // MongoDB 的分页要先查出数据，然后再根据数据来分页，skip() 跳过，limit() 限制查询条数
+    const list = await query.skip(skipIndex).limit(page.pageSize)
+    // countDocuments() 获取总条数
+    const total = await User.countDocuments(params)
+
+    ctx.body = util.success({
+      page: {
+        ...page,
+        total
+      },
+      list
+    })
+  } catch (err) {
+    console.log(err)
+    ctx.body = util.fail(`查询用户列表失败：${err.stack}`)
   }
 })
 
