@@ -70,4 +70,31 @@ router.get('/list', async ctx => {
   }
 })
 
+// 用户删除，这里并不是硬删除，而是将用户状态改为离职
+router.post('/delete', async ctx => {
+  const { userIds } = ctx.request.body
+  
+  try {
+    /**
+     * updateMany 有两种用法，一种通过 $or，一种通过 $in，$in 更简单
+     * User.updateMany({ $or: [{ userId: 100001 }, { userId: 100002 }] }, { state: 2 })
+     */
+    const res = await User.updateMany({
+      userId: { $in: userIds }  // 在 userIds 中的 userId 都会被 update
+    }, { state: 2 })
+
+    if (res.modifiedCount) {
+      ctx.body = util.success(res, `共删除${res.modifiedCount}条数据`)
+      /**
+       * 可以提前结束就提前结束，不用走 if-else，性能好一丢丢
+       * 另外注意 ctx.body 的赋值并没有结束执行的功能，所以还需要 return
+       */
+      return
+    }
+    ctx.body = util.fail('删除失败')
+  } catch (err) {
+    ctx.body = util.fail(`删除失败：${err}`)
+  }
+})
+
 module.exports = router

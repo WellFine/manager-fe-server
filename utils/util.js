@@ -6,7 +6,7 @@ const CODE = {
   USER_ACCOUNT_ERROR: 20001,  // 用户账号密码错误
   USER_LOGIN_ERROR: 20002,  // 用户未登录
   BUSINESS_ERROR: 30001,  // 业务请求失败
-  AUTH_ERROR: 40001  // 认证失败或 token 过期
+  AUTH_ERROR: 50001  // 认证失败或 token 过期
 }
 
 module.exports = {
