@@ -97,4 +97,30 @@ router.post('/delete', async ctx => {
   }
 })
 
+// 用户新增/编辑
+router.post('/operate', async ctx => {
+  const { userId, userName, userEmail, mobile, job, state, roleList, deptId, action } = ctx.request.body
+
+  if (action === 'add') {
+    // 新增操作 userName、userEmail 和 deptId 不能为空
+    if (!userName || !userEmail || !deptId) {
+      ctx.body = util.fail('参数错误', util.CODE.PARAM_ERROR)
+      return
+    }
+  } else {
+    // 编辑操作 deptId 不能为空
+    if (!deptId) {
+      ctx.body = util.fail('部门不能为空', util.CODE.PARAM_ERROR)
+      return
+    }
+    try {
+      await User.findOneAndUpdate({ userId }, { mobile, job, state, roleList, deptId })
+      // 编辑不需要返回字段，返回一个空对象即可
+      ctx.body = util.success({}, '编辑成功')
+    } catch (err) {
+      ctx.body = util.fail(`编辑失败：${err.stack}`)
+    }
+  }
+})
+
 module.exports = router
