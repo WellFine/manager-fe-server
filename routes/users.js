@@ -1,7 +1,9 @@
 const router = require('koa-router')()
 const User = require('../models/userSchema')
+const Counter = require('../models/counterSchema')
 const util = require('../utils/util')
 const jwt = require('jsonwebtoken')
+const md5 = require('md5')
 
 router.prefix('/users')
 
@@ -106,6 +108,34 @@ router.post('/operate', async ctx => {
     if (!userName || !userEmail || !deptId) {
       ctx.body = util.fail('参数错误', util.CODE.PARAM_ERROR)
       return
+    }
+    try {
+      // userName 和 userEmail 不能相同
+      const res = await User.findOne({
+        $or: [{ userName }, { userEmail }]
+      }, '_id userName userEmail')
+
+      if (res) {
+        ctx.body = util.fail(`系统检测到有重复用户：${res.userName} - ${res.userEmail}`)
+        return
+      }
+
+      const doc = await Counter.findOneAndUpdate({ _id: 'userId' }, {
+        $inc: { sequence_value: 1 }  // $inc 设置 sequence_value 字段自增
+      }, { new: true })  // new: true 设置返回 update 后的值，如果没有设置则返回 update 前的值
+
+      const user = new User({
+        userId: doc.sequence_value,  // userId 是 counters 集合自增后的值
+        userName,
+        userPwd: md5('123456'),  // 初始密码就是 123456，通过 md5 加密
+        userEmail, mobile, job, state,
+        role: 1,  // 默认是普通用户，系统管理员不需要太多
+        roleList, deptId
+      })
+      user.save()
+      ctx.body = util.success({}, '用户创建成功')
+    } catch (err) {
+      ctx.body = util.fail(`用户创建失败：${err.stack}`)
     }
   } else {
     // 编辑操作 deptId 不能为空
