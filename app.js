@@ -12,6 +12,7 @@ const koajwt = require('koa-jwt')
 const router = require('koa-router')()
 const users = require('./routes/users')
 const menus = require('./routes/menus')
+const roles = require('./routes/roles')
 
 require('./config/db')  // 引入数据库
 
@@ -52,6 +53,7 @@ app.use(koajwt({ secret: 'imooc' }).unless({
 router.prefix('/api')  // 一级路由
 router.use(users.routes(), users.allowedMethods())  // 二级路由
 router.use(menus.routes(), menus.allowedMethods())
+router.use(roles.routes(), roles.allowedMethods())
 app.use(router.routes(), router.allowedMethods())
 
 // error-handling
