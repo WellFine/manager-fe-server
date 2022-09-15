@@ -153,4 +153,16 @@ router.post('/operate', async ctx => {
   }
 })
 
+// 获取全部在职用户列表
+router.get('/all/list', async ctx => {
+  try {
+    const list = await User.find({
+      state: 1
+    }, 'userId userName userEmail')
+    ctx.body = util.success(list)
+  } catch (error) {
+    ctx.body = util.fail(`获取在职用户失败：${error.stack}`)
+  }
+})
+
 module.exports = router

@@ -41,4 +41,37 @@ router.post('/operate', async ctx => {
   }
 })
 
+// 部门树形列表
+router.get('/list', async ctx => {
+  const { deptName } = ctx.request.query
+  const params = {}
+  if (deptName) params.deptName = deptName
+
+  try {
+    const rootList = await Dept.find(params)
+    if (deptName) {  // deptName 有值则是搜索部门
+      ctx.body = util.success(rootList)
+    } else {  // 不是搜索的话则组装树形结构返回
+      const treeList = getTreeDept(rootList, null)
+      ctx.body = util.success(treeList)
+    }
+  } catch (error) {
+    ctx.body = util.fail(`获取部门树形列表失败：${error.stack}`)
+  }
+})
+
+function getTreeDept (rootList, parentId) {
+  const list = []
+  for (let i = 0; i < rootList.length; i++) {
+    const item = rootList[i]._doc
+    console.log(item)
+    if (String(item.parentId.slice().pop()) === String(parentId)) {
+      item.children = getTreeDept(rootList, item._id)
+      if (item.children.length === 0) delete item.children
+      list.push(item)
+    }
+  }
+  return list
+}
+
 module.exports = router
