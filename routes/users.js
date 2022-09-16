@@ -1,6 +1,8 @@
 const router = require('koa-router')()
 const User = require('../models/userSchema')
 const Counter = require('../models/counterSchema')
+const Menu = require('../models/menuSchema')
+const Role = require('../models/roleSchema')
 const util = require('../utils/util')
 const jwt = require('jsonwebtoken')
 const md5 = require('md5')
@@ -13,7 +15,7 @@ router.post('/login', async ctx => {
     const { userName, userPwd } = ctx.request.body
     const res = await User.findOne({
       userName,
-      userPwd
+      userPwd: md5(userPwd)
     }, 'userId userName userEmail state role deptId roleList')  // 只返回这些用空格隔开的字段
     /**
      * 除了用空格隔开的字符串，还有以下两种方式可以限制返回字段
@@ -164,5 +166,30 @@ router.get('/all/list', async ctx => {
     ctx.body = util.fail(`获取在职用户失败：${error.stack}`)
   }
 })
+
+// 获取用户对应的权限菜单
+router.get('/getPermissionList', async ctx => {
+  const { data } = util.decoded(ctx.request.headers.authorization)
+  const menuList = await getMenuList(data.role, data.roleList)
+  ctx.body = util.success(menuList)
+})
+
+async function getMenuList (userRole, roleKeys) {
+  let list = []
+  if (userRole == 0) {  // 管理员，获取全量菜单
+    list = await Menu.find({}) || []
+  } else {  // 普通用户，根据用户角色来获取权限列表，然后获取菜单
+    const roleList = await Role.find({ _id: { $in: roleKeys } })
+    let permissionList = []
+    roleList.map(role => {
+      const { checkedKeys, halfCheckedKeys } = role.permissionList
+      permissionList = permissionList.concat([...checkedKeys, ...halfCheckedKeys])
+    })
+    // 获取所有权限后进行去重
+    permissionList = [...new Set(permissionList)]
+    list = await Menu.find({ _id: { $in: permissionList } })
+  }
+  return util.getTreeMenu(list, null)
+}
 
 module.exports = router
