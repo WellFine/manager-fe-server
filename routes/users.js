@@ -171,7 +171,12 @@ router.get('/all/list', async ctx => {
 router.get('/getPermissionList', async ctx => {
   const { data } = util.decoded(ctx.request.headers.authorization)
   const menuList = await getMenuList(data.role, data.roleList)
-  ctx.body = util.success(menuList)
+  // 用 JSON 来深拷贝，slice() 是浅拷贝
+  const actionList = getActionList(JSON.parse(JSON.stringify(menuList)))
+  ctx.body = util.success({
+    menuList,
+    actionList
+  })
 })
 
 async function getMenuList (userRole, roleKeys) {
@@ -190,6 +195,25 @@ async function getMenuList (userRole, roleKeys) {
     list = await Menu.find({ _id: { $in: permissionList } })
   }
   return util.getTreeMenu(list, null)
+}
+
+function getActionList (list) {
+  const actionList = []
+  const deep = arr => {
+    while (arr.length) {
+      const item = arr.pop()
+      if (item.action) {
+        item.action.map(action => {
+          actionList.push(action.menuCode)
+        })
+      }
+      if (item.children && !item.action) {
+        deep(item.children)
+      }
+    }
+  }
+  deep(list)
+  return actionList
 }
 
 module.exports = router
