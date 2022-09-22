@@ -14,6 +14,7 @@ const users = require('./routes/users')
 const menus = require('./routes/menus')
 const roles = require('./routes/roles')
 const depts = require('./routes/depts')
+const leave = require('./routes/leave')
 
 require('./config/db')  // 引入数据库
 
@@ -56,6 +57,7 @@ router.use(users.routes(), users.allowedMethods())  // 二级路由
 router.use(menus.routes(), menus.allowedMethods())
 router.use(roles.routes(), roles.allowedMethods())
 router.use(depts.routes(), depts.allowedMethods())
+router.use(leave.routes(), leave.allowedMethods())
 app.use(router.routes(), router.allowedMethods())
 
 // error-handling
