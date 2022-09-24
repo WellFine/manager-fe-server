@@ -7,15 +7,26 @@ router.prefix('/leave')
 
 // 查询用户个人的申请列表
 router.get('/list', async ctx => {
-  const { applyState } = ctx.request.query
+  const { applyState, type } = ctx.request.query
   const { page, skipIndex } = util.pager(ctx.request.query)
   // 加密 token 时是 { data } 这种形式，所以拿 token 数据时解构 data 出来
   const { data } = util.decoded(ctx.request.headers.authorization)
-  const params = {
+
+  let params = {}
+  if (type === 'approve') {  // 查询用户待审批列表
+    // 查询待审核的单子时，当前审批负责人是用户自己
+    if (applyState === 1) {  // 查询待审核
+      params = { curAuditUserName: data.userName, applyState }
+    } else if (applyState > 1) {  // 查询审核中、审核通过、审核拒绝、作废
+      params = { 'auditFlows.userId': data.userId, applyState }
+    } else {  // 查询全部
+      params['auditFlows.userId'] = data.userId
+    }
+  } else {  // 查询用户个人申请列表
     // 查询是否有某条文档的 applyUser 对象下的 userId 值与 data.userId 相同
-    'applyUser.userId': data.userId
+    params['applyUser.userId'] = data.userId
+    if (applyState) params.applyState = applyState
   }
-  if (applyState) params.applyState = applyState
 
   try {
     const query = Leave.find(params)
