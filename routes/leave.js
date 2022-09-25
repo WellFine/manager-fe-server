@@ -15,9 +15,10 @@ router.get('/list', async ctx => {
   let params = {}
   if (type === 'approve') {  // 查询用户待审批列表
     // 查询待审核的单子时，当前审批负责人是用户自己
-    if (applyState === 1) {  // 查询待审核
-      params = { curAuditUserName: data.userName, applyState }
-    } else if (applyState > 1) {  // 查询审核中、审核通过、审核拒绝、作废
+    if (applyState == 1 || applyState == 2) {  // 查询待审核以及审核中状态时当前审批人是自己
+      params.curAuditUserName = data.userName
+      params.$or = [{ applyState: 1 }, { applyState: 2 }]
+    } else if (applyState > 2) {  // 查询审核通过、审核拒绝、作废
       params = { 'auditFlows.userId': data.userId, applyState }
     } else {  // 查询全部
       params['auditFlows.userId'] = data.userId
@@ -96,6 +97,47 @@ router.post('/operate', async ctx => {
     }
   } catch (error) {
     ctx.body = util.fail(`操作失败：${error.stack}`)
+  }
+})
+
+router.post('/approve', async ctx => {
+  const { _id, action, remark } = ctx.request.body
+  const { data } = util.decoded(ctx.request.headers.authorization)
+  const params = {}  // applyState: 1待审批，2审批中，3审批拒绝，4审批通过，5作废
+
+  try {
+    const doc = await Leave.findById(_id)
+    params.auditLogs = doc.auditLogs || []
+
+    if (action === 'refuse') params.applyState = 3
+    else if (action === 'pass') {
+      // 本系统中 auditFlows 审核流程与 auditLogs 审核日志是一一对应的
+      if (doc.auditFlows.length === doc.auditLogs.length) {  // 审核流程已满
+        ctx.body = util.success('当前申请单已处理，请勿重复提交')
+        return
+      } else if (doc.auditFlows.length === doc.auditLogs.length + 1) {  // 最后一级审批
+        params.applyState = 4  // 审批通过
+      } else if (doc.auditFlows.length > doc.auditLogs.length) {
+        params.applyState = 2
+        params.curAuditUserName = doc.auditFlows[doc.auditLogs.length + 1].userName
+      }
+    } else {
+      ctx.body = util.fail('action 参数错误')
+      return
+    }
+
+    params.auditLogs.push({
+      userId: data.userId,
+      userName: data.userName,
+      createTime: Date.now(),
+      remark,
+      action: action === 'refuse' ? '审核拒绝' : '审核通过'
+    })
+
+    await Leave.findByIdAndUpdate(_id, params)
+    ctx.body = util.success({}, '处理成功')
+  } catch (error) {
+    ctx.body = util.fail(`审核失败：${error.stack}`)
   }
 })
 
