@@ -141,4 +141,16 @@ router.post('/approve', async ctx => {
   }
 })
 
+router.get('/count', async ctx => {
+  const { data } = util.decoded(ctx.request.headers.authorization), params = {}
+  try {
+    params.curAuditUserName = data.userName
+    params.$or = [{ applyState: 1 }, { applyState: 2 }]
+    const total = await Leave.countDocuments(params)
+    ctx.body = util.success(total)
+  } catch (error) {
+    ctx.body = util.fail(`查询审核列表条数失败：${error.stack}`)
+  }
+})
+
 module.exports = router
